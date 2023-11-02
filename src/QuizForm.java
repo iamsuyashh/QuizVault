@@ -1,7 +1,9 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+// import java.awt.event.*; 
 import java.sql.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 public class QuizForm extends JFrame {
     JLabel quizTimeHeader = new JLabel("QUIZZ TIME");
@@ -31,6 +33,21 @@ public class QuizForm extends JFrame {
     int wrong = 0;
     int notAnswered = 0;
 
+    private JLabel timerLabel;
+    private int timeInSeconds = 30; // Initial time in seconds (5 minutes)
+    private Timer timer;
+
+    public void updateTimerLabel() {
+        int minutes = timeInSeconds / 60;
+        int seconds = timeInSeconds % 60;
+        if (timeInSeconds <= 5) {
+            timerLabel.setForeground(Color.RED);
+        } else {
+            timerLabel.setForeground(Color.decode("#FFFFFF"));
+        }
+        timerLabel.setText("Time: " + minutes + ":" + String.format("%02d", seconds));
+    }
+
     QuizForm() {
 
         try {
@@ -59,10 +76,51 @@ public class QuizForm extends JFrame {
 
         // Quiz Time header
 
-        quizTimeHeader.setBounds((screenWidth / 2) - 150, 80, 400, 100);
-        quizTimeHeader.setFont(new Font("Inter", Font.BOLD, 64));
-        quizTimeHeader.setForeground(Color.decode("#5BBA6F"));
-        add(quizTimeHeader);
+        timerLabel = new JLabel("Time: " + timeInSeconds / 60 + ":" + String.format("%02d", timeInSeconds % 60));
+        timerLabel.setBounds(screenWidth - 200, 80, 180, 30);
+        timerLabel.setFont(new Font("Inter", Font.BOLD, 20));
+        timerLabel.setForeground(Color.decode("#FFFFFF"));
+        add(timerLabel);
+        timer = new Timer(1000, new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                timeInSeconds--;
+                if (timeInSeconds < 0) {
+                    // Time's up - handle this event
+                    timer.stop();
+
+                    if (questionNum < 9) { // Assuming you have 10 questions
+                        questionNum++;
+                        // Load the next question and options
+                        try {
+                            if (rs.next()) {
+                                question.setText(rs.getString(6));
+                                option1.setText(rs.getString(2));
+                                option2.setText(rs.getString(3));
+                                option3.setText(rs.getString(4));
+                                option4.setText(rs.getString(5));
+
+                                // Reset the timer for the next question
+                                timeInSeconds = 30;
+                                updateTimerLabel();
+                                timer.start();
+                            } else {
+                                // Handle the case where there are no more questions
+                                new Result(correct, wrong, notAnswered);
+                            }
+                        } catch (Exception ex) {
+                            System.out.println(ex);
+                        }
+                    } else {
+                        // Handle the case where all questions are answered
+                        new Result(correct, wrong, notAnswered);
+                    }
+                } else {
+                    updateTimerLabel();
+                }
+            }
+        });
+
+        timer.start();
 
         // Question
         question.setBounds(90, 320, 3000, 35);

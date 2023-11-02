@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.sql.*;
 import javax.swing.*;
 
 public class Result extends JFrame {
@@ -16,7 +17,11 @@ public class Result extends JFrame {
     JLabel numWrong = new JLabel();
     JLabel numNotAnswered = new JLabel("0");
     JLabel percent = new JLabel();
-
+    String url = "jdbc:postgresql://localhost:5432/quizapp";
+    String dbUsername = "postgres";
+    String dbPassword = "suyash123";
+    Connection c;
+    Statement st;
     Result(int correct, int wrong, int notAttempted) {
         // window customization
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -84,10 +89,32 @@ public class Result extends JFrame {
         percent.setBounds(screenWidth / 2, 670, 540, 100);
         percent.setFont(new Font("Inter", Font.BOLD, 64));
         percent.setForeground(Color.decode(statusColor));
-        int numPercent = (correct / 5) * 100;
-        // System.out.println(numPercent);
+        int numPercent = (int)(((double) correct / 5) * 100);
         percent.setText(Integer.toString(numPercent) + "%");
+        System.out.print(numPercent);
         add(percent);
+        try {
+            Connection connection = DriverManager.getConnection(url, dbUsername, dbPassword);
+
+            String insertQuery = "INSERT INTO users (percentage) VALUES (?)";
+            PreparedStatement preparedStatement = connection.prepareStatement(insertQuery);
+            preparedStatement.setDouble(1, numPercent); // Set the percentage value
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+                System.out.println("Percentage updated");
+                // Optionally, redirect to the login screen after successful registration
+                // new LoginForm();
+            } catch (SQLException ex) {
+                System.err.println("Database error: " + ex.getMessage());
+            } finally {
+                try {
+                    if (c != null) {
+                        c.close();
+                    }
+                } catch (SQLException ex) {
+                    System.err.println("Error closing database connection: " + ex.getMessage());
+                }
+            }
 
     }
 
